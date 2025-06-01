@@ -22,7 +22,7 @@ export const CompressionControls: React.FC<CompressionControlsProps> = ({ type, 
   const [customUnit, setCustomUnit] = useState('KB');
   const [isCompressing, setIsCompressing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [compressedBlob, setCompressedBlob] = useState<{ blob: Blob; filename: string } | null>(null);
+  const [compressedResult, setCompressedResult] = useState<{ blob: Blob; filename: string; originalSize: number; compressedSize: number } | null>(null);
   const { toast } = useToast();
 
   const handleCompress = async () => {
@@ -35,9 +35,18 @@ export const CompressionControls: React.FC<CompressionControlsProps> = ({ type, 
       return;
     }
 
+    if (type === 'custom-size' && (!customSize || parseInt(customSize) <= 0)) {
+      toast({
+        title: "Invalid Size",
+        description: "Please enter a valid target size.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCompressing(true);
     setProgress(0);
-    setCompressedBlob(null);
+    setCompressedResult(null);
 
     // Simulate progress
     const progressInterval = setInterval(() => {
@@ -56,14 +65,23 @@ export const CompressionControls: React.FC<CompressionControlsProps> = ({ type, 
         { size: parseInt(customSize), unit: customUnit } : undefined;
       
       const result = await compressImage(selectedFile, compressionLevel[0], customSizeData);
-      setCompressedBlob(result);
+      
+      setCompressedResult({
+        ...result,
+        originalSize: selectedFile.size,
+        compressedSize: result.blob.size
+      });
+      
       setProgress(100);
+      
+      const compressionRatio = ((selectedFile.size - result.blob.size) / selectedFile.size * 100).toFixed(1);
       
       toast({
         title: "Compression Complete!",
-        description: "Your image has been compressed successfully with minimal quality loss.",
+        description: `Image compressed by ${compressionRatio}%. Size reduced from ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB to ${(result.blob.size / 1024 / 1024).toFixed(2)}MB.`,
       });
     } catch (error) {
+      console.error('Compression error:', error);
       toast({
         title: "Compression Failed",
         description: "There was an error compressing your image. Please try again.",
@@ -76,8 +94,8 @@ export const CompressionControls: React.FC<CompressionControlsProps> = ({ type, 
   };
 
   const handleDownload = () => {
-    if (compressedBlob) {
-      downloadBlob(compressedBlob.blob, compressedBlob.filename);
+    if (compressedResult) {
+      downloadBlob(compressedResult.blob, compressedResult.filename);
       toast({
         title: "Download Started",
         description: "Your compressed image is being downloaded.",
@@ -163,6 +181,27 @@ export const CompressionControls: React.FC<CompressionControlsProps> = ({ type, 
           </div>
         </div>
 
+        {/* Compression Results */}
+        {compressedResult && (
+          <div className="bg-green-500/20 rounded-lg p-4 space-y-2">
+            <h4 className="font-medium text-green-400">Compression Results</h4>
+            <div className="text-sm space-y-1">
+              <div className="flex justify-between">
+                <span>Original Size:</span>
+                <span>{(compressedResult.originalSize / 1024 / 1024).toFixed(2)} MB</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Compressed Size:</span>
+                <span>{(compressedResult.compressedSize / 1024 / 1024).toFixed(2)} MB</span>
+              </div>
+              <div className="flex justify-between font-medium text-green-400">
+                <span>Space Saved:</span>
+                <span>{((compressedResult.originalSize - compressedResult.compressedSize) / compressedResult.originalSize * 100).toFixed(1)}%</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isCompressing && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
@@ -188,7 +227,7 @@ export const CompressionControls: React.FC<CompressionControlsProps> = ({ type, 
           )}
         </Button>
 
-        {compressedBlob && (
+        {compressedResult && (
           <Button
             onClick={handleDownload}
             variant="outline"
