@@ -1,23 +1,26 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, X, FileImage } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { useImageUpload } from "@/hooks/useImageUpload";
 
-export const ImageUploader = () => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+interface ImageUploaderProps {
+  onFileSelect?: (file: File | null) => void;
+}
+
+export const ImageUploader: React.FC<ImageUploaderProps> = ({ onFileSelect }) => {
+  const { selectedFile, previewUrl, handleFileSelect, clearFile } = useImageUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.type.startsWith('image/')) {
-        setSelectedFile(file);
-        const url = URL.createObjectURL(file);
-        setPreviewUrl(url);
+        handleFileSelect(file);
+        onFileSelect?.(file);
         toast({
           title: "Image Uploaded Successfully!",
           description: `File: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
@@ -36,9 +39,8 @@ export const ImageUploader = () => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      handleFileSelect(file);
+      onFileSelect?.(file);
       toast({
         title: "Image Uploaded Successfully!",
         description: `File: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
@@ -51,8 +53,8 @@ export const ImageUploader = () => {
   };
 
   const removeFile = () => {
-    setSelectedFile(null);
-    setPreviewUrl(null);
+    clearFile();
+    onFileSelect?.(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -95,7 +97,7 @@ export const ImageUploader = () => {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={handleFileSelect}
+              onChange={handleFileChange}
               className="hidden"
             />
           </div>

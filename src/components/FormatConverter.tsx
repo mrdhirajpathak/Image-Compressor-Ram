@@ -6,34 +6,84 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { FileImage, Download, ArrowRight } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { convertImageFormat, downloadBlob } from "@/utils/imageProcessor";
 
-export const FormatConverter = () => {
+interface FormatConverterProps {
+  selectedFile?: File | null;
+}
+
+export const FormatConverter: React.FC<FormatConverterProps> = ({ selectedFile }) => {
   const [sourceFormat, setSourceFormat] = useState('JPG');
   const [targetFormat, setTargetFormat] = useState('PNG');
   const [isConverting, setIsConverting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [convertedBlob, setConvertedBlob] = useState<{ blob: Blob; filename: string } | null>(null);
   const { toast } = useToast();
 
-  const handleConvert = () => {
+  const handleConvert = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "No Image Selected",
+        description: "Please upload an image first before converting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (sourceFormat === targetFormat) {
+      toast({
+        title: "Same Format Selected",
+        description: "Please select different source and target formats.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsConverting(true);
     setProgress(0);
+    setConvertedBlob(null);
 
-    // Simulate conversion progress
-    const interval = setInterval(() => {
+    // Simulate progress
+    const progressInterval = setInterval(() => {
       setProgress((prev) => {
         const newProgress = prev + Math.random() * 12;
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          setIsConverting(false);
-          toast({
-            title: "Conversion Complete!",
-            description: `Successfully converted ${sourceFormat} to ${targetFormat} without quality loss.`,
-          });
-          return 100;
+        if (newProgress >= 90) {
+          clearInterval(progressInterval);
+          return 90;
         }
         return newProgress;
       });
-    }, 150);
+    }, 120);
+
+    try {
+      const result = await convertImageFormat(selectedFile, targetFormat);
+      setConvertedBlob(result);
+      setProgress(100);
+      
+      toast({
+        title: "Conversion Complete!",
+        description: `Successfully converted ${sourceFormat} to ${targetFormat} without quality loss.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Conversion Failed",
+        description: "There was an error converting your image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConverting(false);
+      clearInterval(progressInterval);
+    }
+  };
+
+  const handleDownload = () => {
+    if (convertedBlob) {
+      downloadBlob(convertedBlob.blob, convertedBlob.filename);
+      toast({
+        title: "Download Started",
+        description: "Your converted image is being downloaded.",
+      });
+    }
   };
 
   return (
@@ -130,7 +180,7 @@ export const FormatConverter = () => {
 
         <Button
           onClick={handleConvert}
-          disabled={isConverting || sourceFormat === targetFormat}
+          disabled={isConverting || sourceFormat === targetFormat || !selectedFile}
           className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
         >
           {isConverting ? (
@@ -143,8 +193,9 @@ export const FormatConverter = () => {
           )}
         </Button>
 
-        {progress === 100 && (
+        {convertedBlob && (
           <Button
+            onClick={handleDownload}
             variant="outline"
             className="w-full border-white/30 text-white hover:bg-white/10"
           >

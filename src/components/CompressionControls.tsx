@@ -9,39 +9,80 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Download, Zap, Settings } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { compressImage, downloadBlob } from "@/utils/imageProcessor";
 
 interface CompressionControlsProps {
   type: 'percentage' | 'custom-size';
+  selectedFile?: File | null;
 }
 
-export const CompressionControls: React.FC<CompressionControlsProps> = ({ type }) => {
+export const CompressionControls: React.FC<CompressionControlsProps> = ({ type, selectedFile }) => {
   const [compressionLevel, setCompressionLevel] = useState([70]);
   const [customSize, setCustomSize] = useState('');
   const [customUnit, setCustomUnit] = useState('KB');
   const [isCompressing, setIsCompressing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [compressedBlob, setCompressedBlob] = useState<{ blob: Blob; filename: string } | null>(null);
   const { toast } = useToast();
 
-  const handleCompress = () => {
+  const handleCompress = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "No Image Selected",
+        description: "Please upload an image first before compressing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCompressing(true);
     setProgress(0);
+    setCompressedBlob(null);
 
-    // Simulate compression progress
-    const interval = setInterval(() => {
+    // Simulate progress
+    const progressInterval = setInterval(() => {
       setProgress((prev) => {
         const newProgress = prev + Math.random() * 15;
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          setIsCompressing(false);
-          toast({
-            title: "Compression Complete!",
-            description: "Your image has been compressed successfully with minimal quality loss.",
-          });
-          return 100;
+        if (newProgress >= 90) {
+          clearInterval(progressInterval);
+          return 90;
         }
         return newProgress;
       });
-    }, 200);
+    }, 100);
+
+    try {
+      const customSizeData = type === 'custom-size' && customSize ? 
+        { size: parseInt(customSize), unit: customUnit } : undefined;
+      
+      const result = await compressImage(selectedFile, compressionLevel[0], customSizeData);
+      setCompressedBlob(result);
+      setProgress(100);
+      
+      toast({
+        title: "Compression Complete!",
+        description: "Your image has been compressed successfully with minimal quality loss.",
+      });
+    } catch (error) {
+      toast({
+        title: "Compression Failed",
+        description: "There was an error compressing your image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCompressing(false);
+      clearInterval(progressInterval);
+    }
+  };
+
+  const handleDownload = () => {
+    if (compressedBlob) {
+      downloadBlob(compressedBlob.blob, compressedBlob.filename);
+      toast({
+        title: "Download Started",
+        description: "Your compressed image is being downloaded.",
+      });
+    }
   };
 
   return (
@@ -134,7 +175,7 @@ export const CompressionControls: React.FC<CompressionControlsProps> = ({ type }
 
         <Button
           onClick={handleCompress}
-          disabled={isCompressing}
+          disabled={isCompressing || !selectedFile}
           className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
         >
           {isCompressing ? (
@@ -147,8 +188,9 @@ export const CompressionControls: React.FC<CompressionControlsProps> = ({ type }
           )}
         </Button>
 
-        {progress === 100 && (
+        {compressedBlob && (
           <Button
+            onClick={handleDownload}
             variant="outline"
             className="w-full border-white/30 text-white hover:bg-white/10"
           >

@@ -3,21 +3,19 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Download, Image as ImageIcon, Zap, Settings, FileImage } from "lucide-react";
+import { Image as ImageIcon } from "lucide-react";
 import { NotificationPopup } from "@/components/NotificationPopup";
 import { ImageUploader } from "@/components/ImageUploader";
 import { CompressionControls } from "@/components/CompressionControls";
 import { FormatConverter } from "@/components/FormatConverter";
 import { FeatureCard } from "@/components/FeatureCard";
+import { Zap, Settings, FileImage } from "lucide-react";
 
 const Index = () => {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -41,6 +39,10 @@ const Index = () => {
         duration: 3000,
       });
     }, 500);
+  };
+
+  const handleFileSelect = (file: File | null) => {
+    setSelectedFile(file);
   };
 
   return (
@@ -115,22 +117,22 @@ const Index = () => {
 
             <TabsContent value="compress" className="mt-8">
               <div className="grid lg:grid-cols-2 gap-8">
-                <ImageUploader />
-                <CompressionControls type="percentage" />
+                <ImageUploader onFileSelect={handleFileSelect} />
+                <CompressionControls type="percentage" selectedFile={selectedFile} />
               </div>
             </TabsContent>
 
             <TabsContent value="resize" className="mt-8">
               <div className="grid lg:grid-cols-2 gap-8">
-                <ImageUploader />
-                <CompressionControls type="custom-size" />
+                <ImageUploader onFileSelect={handleFileSelect} />
+                <CompressionControls type="custom-size" selectedFile={selectedFile} />
               </div>
             </TabsContent>
 
             <TabsContent value="convert" className="mt-8">
               <div className="grid lg:grid-cols-2 gap-8">
-                <ImageUploader />
-                <FormatConverter />
+                <ImageUploader onFileSelect={handleFileSelect} />
+                <FormatConverter selectedFile={selectedFile} />
               </div>
             </TabsContent>
           </Tabs>
