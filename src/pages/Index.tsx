@@ -62,7 +62,7 @@ const Index = () => {
               </div>
               <h1 className="text-2xl font-bold text-white">Image Compressor Ram</h1>
             </div>
-            <Button variant="outline" className="text-white border-white/30 hover:bg-white/10">
+            <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
               Home
             </Button>
           </div>
@@ -72,7 +72,7 @@ const Index = () => {
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-12">
         <div className="text-center mb-12">
-          <h2 className="text-5xl font-bold text-white mb-4 animate-float">
+          <h2 className="text-5xl font-bold text-white mb-4">
             Image Compressor Ram
           </h2>
           <p className="text-xl text-white/80 mb-8 max-w-3xl mx-auto">
@@ -104,13 +104,13 @@ const Index = () => {
         <div className="max-w-6xl mx-auto">
           <Tabs defaultValue="compress" className="w-full">
             <TabsList className="grid w-full grid-cols-3 bg-white/10 backdrop-blur-lg">
-              <TabsTrigger value="compress" className="text-white data-[state=active]:bg-white/20">
+              <TabsTrigger value="compress" className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white">
                 Image Compression
               </TabsTrigger>
-              <TabsTrigger value="resize" className="text-white data-[state=active]:bg-white/20">
+              <TabsTrigger value="resize" className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white">
                 Custom Size
               </TabsTrigger>
-              <TabsTrigger value="convert" className="text-white data-[state=active]:bg-white/20">
+              <TabsTrigger value="convert" className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white">
                 Format Converter
               </TabsTrigger>
             </TabsList>
